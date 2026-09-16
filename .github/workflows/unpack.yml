@@ -1,0 +1,29 @@
+name: Unpack Curiosity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack project
+        run: |
+          mkdir temp
+          unzip -o Curiosity.zip -d temp
+          cp -r temp/Curiosity/* .
+          rm -rf temp Curiosity.zip
+
+      - name: Commit project
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Add Curiosity Android project" || exit 0
+          git push
