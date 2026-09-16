@@ -3,9 +3,6 @@ name: Build Curiosity APK
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,9 +16,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Set up Android
-        uses: android-actions/setup-android@v3
 
       - name: Build APK
         run: |
