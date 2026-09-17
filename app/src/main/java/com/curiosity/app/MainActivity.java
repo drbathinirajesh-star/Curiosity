@@ -1,20 +1,19 @@
 package com.curiosity.app;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.speech.RecognizerIntent;
 import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.widget.Button;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     private TextView status;
     private Button listen;
@@ -83,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onError(int error) {
-                status.setText("I couldn't hear that. Try again.");
+                status.setText("Didn't catch that. Try again.");
             }
 
             @Override
@@ -125,8 +124,13 @@ public class MainActivity extends AppCompatActivity {
         );
 
         intent.putExtra(
-                RecognizerIntent.EXTRA_PROMPT,
-                "Say something..."
+                RecognizerIntent.EXTRA_LANGUAGE,
+                "en-IN"
+        );
+
+        intent.putExtra(
+                RecognizerIntent.EXTRA_MAX_RESULTS,
+                1
         );
 
         recognizer.startListening(intent);
@@ -137,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (recognizer != null) {
             recognizer.destroy();
+            recognizer = null;
         }
 
         super.onDestroy();
