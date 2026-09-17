@@ -10,8 +10,16 @@ import android.speech.tts.TextToSpeech;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Locale;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity {
 
@@ -19,6 +27,9 @@ public class MainActivity extends Activity {
     private Button listen;
     private SpeechRecognizer recognizer;
     private TextToSpeech speaker;
+
+    // PUT YOUR OPENAI API KEY HERE
+    private static final String API_KEY = "PASTE_YOUR_API_KEY_HERE";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,12 +60,10 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onRmsChanged(float rmsdB) {
-            }
+            public void onRmsChanged(float rmsdB) {}
 
             @Override
-            public void onBufferReceived(byte[] buffer) {
-            }
+            public void onBufferReceived(byte[] buffer) {}
 
             @Override
             public void onEndOfSpeech() {
@@ -63,7 +72,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onError(int error) {
-                status.setText("I didn't catch that. Try again.");
+                status.setText("I couldn't hear you. Try again.");
             }
 
             @Override
@@ -77,21 +86,17 @@ public class MainActivity extends Activity {
 
                     String question = matches.get(0);
 
-                    status.setText(question);
+                    status.setText("You: " + question);
 
-                    String answer = getCuriosityAnswer(question);
-
-                    speak(answer);
+                    askAI(question);
                 }
             }
 
             @Override
-            public void onPartialResults(Bundle partialResults) {
-            }
+            public void onPartialResults(Bundle partialResults) {}
 
             @Override
-            public void onEvent(int eventType, Bundle params) {
-            }
+            public void onEvent(int eventType, Bundle params) {}
         });
 
         listen.setOnClickListener(v -> startListening());
@@ -117,43 +122,156 @@ public class MainActivity extends Activity {
         recognizer.startListening(intent);
     }
 
-    private String getCuriosityAnswer(String question) {
+    private void askAI(String question) {
 
-        String text = question.toLowerCase();
+        status.setText("Curiosity is thinking...");
 
-        if (text.contains("hello") ||
-                text.contains("hi") ||
-                text.contains("hey")) {
+        new Thread(() -> {
 
-            return "Hello! I'm Curiosity. How can I help you?";
-        }
+            try {
 
-        if (text.contains("how are you")) {
+                URL url = new URL(
+                        "https://api.openai.com/v1/responses");
 
-            return "I'm doing great! Thanks for asking.";
-        }
+                HttpURLConnection connection =
+                        (HttpURLConnection) url.openConnection();
 
-        if (text.contains("your name")) {
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty(
+                        "Authorization",
+                        "Bearer " + API_KEY);
 
-            return "My name is Curiosity.";
-        }
+                connection.setRequestProperty(
+                        "Content-Type",
+                        "application/json");
 
-        if (text.contains("who are you")) {
+                connection.setDoOutput(true);
 
-            return "I'm Curiosity, your voice assistant.";
-        }
+                JSONObject body = new JSONObject();
 
-        if (text.contains("thank")) {
+                body.put("model", "gpt-5.6-luna");
 
-            return "You're welcome!";
-        }
+                body.put(
+                        "instructions",
+                        "You are Curiosity, a friendly helpful voice AI assistant. " +
+                        "Answer naturally and clearly. Keep spoken answers reasonably concise.");
 
-        if (text.contains("bye")) {
+                JSONArray input = new JSONArray();
 
-            return "Goodbye! Talk to you later.";
-        }
+                JSONObject message = new JSONObject();
 
-        return "I heard you say: " + question;
+                message.put("role", "user");
+                message.put("content", question);
+
+                input.put(message);
+
+                body.put("input", input);
+
+                OutputStream output =
+                        connection.getOutputStream();
+
+                output.write(
+                        body.toString().getBytes("UTF-8"));
+
+                output.close();
+
+                int responseCode =
+                        connection.getResponseCode();
+
+                BufferedReader reader;
+
+                if (responseCode >= 200 &&
+                        responseCode < 300) {
+
+                    reader = new BufferedReader(
+                            new InputStreamReader(
+                                    connection.getInputStream()));
+
+                } else {
+
+                    reader = new BufferedReader(
+                            new InputStreamReader(
+                                    connection.getErrorStream()));
+                }
+
+                StringBuilder response =
+                        new StringBuilder();
+
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+
+                reader.close();
+
+                JSONObject json =
+                        new JSONObject(response.toString());
+
+                if (responseCode >= 200 &&
+                        responseCode < 300) {
+
+                    String answer =
+                            extractAnswer(json);
+
+                    runOnUiThread(() -> speak(answer));
+
+                } else {
+
+                    runOnUiThread(() ->
+                            status.setText(
+                                    "AI error: " + responseCode));
+                }
+
+                connection.disconnect();
+
+            } catch (Exception e) {
+
+                runOnUiThread(() ->
+                        status.setText(
+                                "Connection error: " +
+                                e.getMessage()));
+            }
+
+        }).start();
+    }
+
+    private String extractAnswer(JSONObject json) {
+
+        try {
+
+            if (json.has("output_text")) {
+                return json.getString("output_text");
+            }
+
+            JSONArray output =
+                    json.getJSONArray("output");
+
+            for (int i = 0; i < output.length(); i++) {
+
+                JSONObject item =
+                        output.getJSONObject(i);
+
+                if (item.has("content")) {
+
+                    JSONArray content =
+                            item.getJSONArray("content");
+
+                    for (int j = 0; j < content.length(); j++) {
+
+                        JSONObject part =
+                                content.getJSONObject(j);
+
+                        if (part.has("text")) {
+                            return part.getString("text");
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception ignored) {}
+
+        return "Sorry, I couldn't understand the AI response.";
     }
 
     private void speak(String answer) {
@@ -161,6 +279,7 @@ public class MainActivity extends Activity {
         status.setText(answer);
 
         if (speaker != null) {
+
             speaker.speak(
                     answer,
                     TextToSpeech.QUEUE_FLUSH,
