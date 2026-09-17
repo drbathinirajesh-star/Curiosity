@@ -4,31 +4,23 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="32dp">
-
-    <TextView
-        android:id="@+id/title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="CURIOSITY"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="24dp" />
+    android:padding="24dp">
 
     <TextView
         android:id="@+id/status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Ready"
-        android:textSize="18sp"
+        android:text="Hello! I am Curiosity."
+        android:textSize="24sp"
         android:gravity="center"
-        android:layout_marginBottom="32dp" />
+        android:padding="20dp" />
 
     <Button
-        android:id="@+id/listenButton"
+        android:id="@+id/listen"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="🎙 LISTEN"
-        android:textSize="18sp" />
+        android:text="🎤 Talk to Curiosity"
+        android:textSize="18sp"
+        android:layout_marginTop="30dp" />
 
 </LinearLayout>
