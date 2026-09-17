@@ -23,6 +23,8 @@ jobs:
           gradle-version: '8.10'
 
       - name: Build APK
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: gradle assembleDebug
 
       - name: Upload Curiosity APK
