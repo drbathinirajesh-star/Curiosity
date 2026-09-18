@@ -21,7 +21,9 @@ android {
     buildTypes {
         debug {
             def apiKey = System.getenv('OPENAI_API_KEY') ?: ''
-            buildConfigField 'String', 'OPENAI_API_KEY', '"' + apiKey + '"'
+            def safeApiKey = groovy.json.JsonOutput.toJson(apiKey)
+
+            buildConfigField 'String', 'OPENAI_API_KEY', safeApiKey
         }
     }
 }
